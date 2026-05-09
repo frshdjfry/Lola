@@ -4,6 +4,7 @@ import csv
 import json
 import signal
 import threading
+import bisect
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pyglet
@@ -66,7 +67,64 @@ def load_glasgow_norms(csv_path: Path) -> dict:
 
             norms[word] = parsed
 
+    norms = add_percentiles(norms)
+
     print(f"[NORMS] Loaded {len(norms)} words from {csv_path}")
+    return norms
+
+
+def add_percentiles(norms: dict) -> dict:
+    """
+    Adds percentile fields for each numeric Glasgow column.
+    Percentiles are in [0, 1].
+    """
+    if not norms:
+        return norms
+
+    numeric_columns = [
+        "arousal_mean",
+        "valence_mean",
+        "dominance_mean",
+        "concreteness_mean",
+        "imageability_mean",
+        "familiarity_mean",
+        "age_of_acquisition_mean",
+        "size_mean",
+        "gender_mean",
+    ]
+
+    sorted_values_by_col = {}
+    for col in numeric_columns:
+        vals = [
+            row[col]
+            for row in norms.values()
+            if row.get(col) is not None
+        ]
+        vals.sort()
+        sorted_values_by_col[col] = vals
+
+    for row in norms.values():
+        for col in numeric_columns:
+            value = row.get(col)
+            pct_key = col.replace("_mean", "_pct")
+
+            vals = sorted_values_by_col[col]
+            if value is None or not vals:
+                row[pct_key] = None
+                continue
+
+            # percentile rank using midpoint of ties
+            left = bisect.bisect_left(vals, value)
+            right = bisect.bisect_right(vals, value)
+            rank = (left + right) / 2.0
+
+            if len(vals) == 1:
+                pct = 0.5
+            else:
+                pct = rank / len(vals)
+
+            row[pct_key] = int(min(1.0, max(0.0, pct))*100)
+
     return norms
 
 

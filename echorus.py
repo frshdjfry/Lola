@@ -162,6 +162,7 @@ class UtteranceShuffler:
             midi_osc_address: str = MIDI_OSC_ADDRESS,
             word_norms: Optional[Dict[str, Dict[str, Any]]] = None,
     ):
+
         self.model = Model(MODEL_PATH)
         self.audio_queue = queue.Queue(maxsize=MAX_AUDIO_QUEUE_CHUNKS)
         self.playback_queue = queue.Queue(maxsize=MAX_PLAYBACK_QUEUE)
@@ -540,9 +541,6 @@ class UtteranceShuffler:
         return self.word_norms.get(word.lower())
 
     def print_detected_word_norms(self, words: list):
-        """
-        Print Glasgow values for raw detected words from Vosk.
-        """
         seen = set()
 
         for item in words:
@@ -550,7 +548,6 @@ class UtteranceShuffler:
             if not word:
                 continue
 
-            # avoid duplicate prints for identical repeated tokens in same utterance
             key = (word, item.get("start"), item.get("end"))
             if key in seen:
                 continue
@@ -563,15 +560,15 @@ class UtteranceShuffler:
 
             print(
                 f"[NORMS] {word}: "
-                f"arousal={norms.get('arousal_mean')} "
-                f"valence={norms.get('valence_mean')} "
-                f"dominance={norms.get('dominance_mean')} "
-                f"concreteness={norms.get('concreteness_mean')} "
-                f"imageability={norms.get('imageability_mean')} "
-                f"familiarity={norms.get('familiarity_mean')} "
-                f"age_of_acquisition={norms.get('age_of_acquisition_mean')} "
-                f"size={norms.get('size_mean')} "
-                f"gender={norms.get('gender_mean')}"
+                f"arousal={norms.get('arousal_mean')} ({norms.get('arousal_pct')}) "
+                f"valence={norms.get('valence_mean')} ({norms.get('valence_pct')}) "
+                f"dominance={norms.get('dominance_mean')} ({norms.get('dominance_pct')}) "
+                f"concreteness={norms.get('concreteness_mean')} ({norms.get('concreteness_pct')}) "
+                f"imageability={norms.get('imageability_mean')} ({norms.get('imageability_pct')}) "
+                f"familiarity={norms.get('familiarity_mean')} ({norms.get('familiarity_pct')}) "
+                f"age_of_acquisition={norms.get('age_of_acquisition_mean')} ({norms.get('age_of_acquisition_pct')}) "
+                f"size={norms.get('size_mean')} ({norms.get('size_pct')}) "
+                f"gender={norms.get('gender_mean')} ({norms.get('gender_pct')})"
             )
 
     # -----------------------------
