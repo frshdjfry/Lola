@@ -20,7 +20,7 @@ import threading
 import time
 import math
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import numpy as np
 import sounddevice as sd
@@ -155,11 +155,12 @@ class PlaybackJob:
 
 class UtteranceShuffler:
     def __init__(
-        self,
-        midi_out_only: bool = False,
-        midi_osc_host: str = MIDI_OSC_HOST,
-        midi_osc_port: int = MIDI_OSC_PORT,
-        midi_osc_address: str = MIDI_OSC_ADDRESS,
+            self,
+            midi_out_only: bool = False,
+            midi_osc_host: str = MIDI_OSC_HOST,
+            midi_osc_port: int = MIDI_OSC_PORT,
+            midi_osc_address: str = MIDI_OSC_ADDRESS,
+            word_norms: Optional[Dict[str, Dict[str, Any]]] = None,
     ):
         self.model = Model(MODEL_PATH)
         self.audio_queue = queue.Queue(maxsize=MAX_AUDIO_QUEUE_CHUNKS)
@@ -174,6 +175,9 @@ class UtteranceShuffler:
             if MIDI_OSC_ENABLED
             else None
         )
+
+        self.word_norms = word_norms or {}
+        print(f"[NORMS] Speech app received {len(self.word_norms)} norm entries")
 
         self.recognition_thread: Optional[threading.Thread] = None
         self.playback_thread: Optional[threading.Thread] = None
@@ -532,6 +536,43 @@ class UtteranceShuffler:
 
         return pitched
 
+    def get_word_norms(self, word: str) -> Optional[Dict[str, Any]]:
+        return self.word_norms.get(word.lower())
+
+    def print_detected_word_norms(self, words: list):
+        """
+        Print Glasgow values for raw detected words from Vosk.
+        """
+        seen = set()
+
+        for item in words:
+            word = (item.get("word") or "").strip().lower()
+            if not word:
+                continue
+
+            # avoid duplicate prints for identical repeated tokens in same utterance
+            key = (word, item.get("start"), item.get("end"))
+            if key in seen:
+                continue
+            seen.add(key)
+
+            norms = self.get_word_norms(word)
+            if norms is None:
+                print(f"[NORMS] {word}: not found")
+                continue
+
+            print(
+                f"[NORMS] {word}: "
+                f"arousal={norms.get('arousal_mean')} "
+                f"valence={norms.get('valence_mean')} "
+                f"dominance={norms.get('dominance_mean')} "
+                f"concreteness={norms.get('concreteness_mean')} "
+                f"imageability={norms.get('imageability_mean')} "
+                f"familiarity={norms.get('familiarity_mean')} "
+                f"age_of_acquisition={norms.get('age_of_acquisition_mean')} "
+                f"size={norms.get('size_mean')} "
+                f"gender={norms.get('gender_mean')}"
+            )
 
     # -----------------------------
     # Rhythm / arrangement
@@ -928,6 +969,8 @@ class UtteranceShuffler:
                 continue
 
             utterance_audio, words = result
+            self.print_detected_word_norms(words)
+
             word_slices = self.extract_word_slices(utterance_audio, words)
             word_slices = self.assign_random_pitches_to_word_slices(word_slices)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import csv
 import json
 import signal
 import threading
@@ -16,14 +17,58 @@ from urllib.parse import urlparse
 HOST = "127.0.0.1"
 PORT = 8000
 BASE_DIR = Path(__file__).parent
-STATIC_DIR = Path('./static')
+STATIC_DIR = Path("./static")
 
 CONFIG = {
     "midi_out_only": False,
     "midi_osc_host": "127.0.0.1",
     "midi_osc_port": 9001,
     "midi_osc_address": "/midi",
+    "glasgow_csv": str(BASE_DIR / "glasgow.csv"),
 }
+
+WORD_NORMS = {}
+
+
+def load_glasgow_norms(csv_path: Path) -> dict:
+    """
+    Load Glasgow word norms CSV into a dict keyed by lowercase word.
+    Expected columns:
+      word, arousal_mean, valence_mean, dominance_mean, concreteness_mean,
+      imageability_mean, familiarity_mean, age_of_acquisition_mean,
+      size_mean, gender_mean
+    """
+    norms = {}
+
+    if not csv_path.exists():
+        print(f"[NORMS] CSV not found: {csv_path}")
+        return norms
+
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            word = (row.get("word") or "").strip().lower()
+            if not word:
+                continue
+
+            parsed = {"word": word}
+            for key, value in row.items():
+                if key == "word":
+                    continue
+                if value is None or value == "":
+                    parsed[key] = None
+                    continue
+                try:
+                    parsed[key] = float(value)
+                except ValueError:
+                    parsed[key] = None
+
+            norms[word] = parsed
+
+    print(f"[NORMS] Loaded {len(norms)} words from {csv_path}")
+    return norms
+
 
 class AppState:
     def __init__(self):
@@ -44,6 +89,8 @@ class AppState:
                 "midi_osc_host": CONFIG["midi_osc_host"],
                 "midi_osc_port": CONFIG["midi_osc_port"],
                 "midi_osc_address": CONFIG["midi_osc_address"],
+                "glasgow_csv": CONFIG["glasgow_csv"],
+                "glasgow_words_loaded": len(WORD_NORMS),
             }
 
 
@@ -124,7 +171,6 @@ class RequestHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": "not found"})
 
     def log_message(self, format, *args):
-        # quieter server logging
         print(f"[HTTP] {self.address_string()} - {format % args}")
 
 
@@ -148,6 +194,7 @@ def run_speech_app():
         midi_osc_host=CONFIG["midi_osc_host"],
         midi_osc_port=CONFIG["midi_osc_port"],
         midi_osc_address=CONFIG["midi_osc_address"],
+        word_norms=WORD_NORMS,
     )
 
     with STATE.lock:
@@ -195,6 +242,7 @@ def handle_signal(signum, frame):
     print(f"[MAIN] Received signal {signum}")
     shutdown_all()
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Lola audio-visual reactive installation")
 
@@ -223,10 +271,17 @@ def parse_args():
         help="OSC address for MIDI output.",
     )
 
+    parser.add_argument(
+        "--glasgow-csv",
+        default=str(BASE_DIR / "glasgow.csv"),
+        help="Path to Glasgow norms CSV.",
+    )
+
     return parser.parse_args()
 
+
 def main():
-    global VISUAL_APP
+    global VISUAL_APP, WORD_NORMS
 
     args = parse_args()
 
@@ -234,6 +289,9 @@ def main():
     CONFIG["midi_osc_host"] = args.midi_osc_host
     CONFIG["midi_osc_port"] = args.midi_osc_port
     CONFIG["midi_osc_address"] = args.midi_osc_address
+    CONFIG["glasgow_csv"] = args.glasgow_csv
+
+    WORD_NORMS = load_glasgow_norms(Path(CONFIG["glasgow_csv"]))
 
     print("[CONFIG] midi_out_only =", CONFIG["midi_out_only"])
     print(
@@ -241,6 +299,8 @@ def main():
         f"{CONFIG['midi_osc_host']}:{CONFIG['midi_osc_port']}"
         f"{CONFIG['midi_osc_address']}"
     )
+    print("[CONFIG] glasgow_csv =", CONFIG["glasgow_csv"])
+    print("[CONFIG] glasgow_words_loaded =", len(WORD_NORMS))
 
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
