@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Echorus Writer</title>
+  <style>
+    :root {
+      --bg: #070811;
+      --panel: rgba(18, 22, 41, 0.88);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f5f7ff;
+      --muted: #9ba6c7;
+      --cyan: #6ff3ff;
+      --danger: #ff6678;
+      --font: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(111, 243, 255, 0.18), transparent 32rem),
+        radial-gradient(circle at 85% 5%, rgba(181, 140, 255, 0.18), transparent 30rem),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .panel {
+      width: min(840px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.28);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    textarea, input, button {
+      font: inherit;
+    }
+
+    textarea, input {
+      width: 100%;
+      color: var(--text);
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      outline: 0;
+      padding: 14px 16px;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      margin-top: 14px;
+      align-items: end;
+    }
+
+    button {
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(111,243,255,0.28), rgba(181,140,255,0.24));
+      cursor: pointer;
+    }
+
+    .meta {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .error {
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>Utterance Writer</h1>
+    <p>Type text and press Enter to send. Use Shift+Enter for a new line.</p>
+
+    <label>
+      Endpoint
+      <input id="endpoint" value="http://127.0.0.1:8000/utterance" />
+    </label>
+
+    <div class="row">
+      <textarea id="utterance" placeholder="Type an utterance here..."></textarea>
+      <button id="sendBtn">Send</button>
+    </div>
+
+    <div id="meta" class="meta">Idle</div>
+  </main>
+
+  <script>
+    const utteranceEl = document.querySelector("#utterance");
+    const endpointEl = document.querySelector("#endpoint");
+    const sendBtn = document.querySelector("#sendBtn");
+    const metaEl = document.querySelector("#meta");
+
+    async function sendUtterance() {
+      const text = utteranceEl.value.trim();
+      if (!text) return;
+
+      metaEl.textContent = "Sending...";
+      metaEl.classList.remove("error");
+
+      try {
+        const response = await fetch(endpointEl.value.trim(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        metaEl.textContent = `Sent at ${new Date().toLocaleTimeString()}`;
+        utteranceEl.value = "";
+      } catch (error) {
+        metaEl.textContent = error.message;
+        metaEl.classList.add("error");
+      }
+    }
+
+    sendBtn.addEventListener("click", sendUtterance);
+
+    utteranceEl.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendUtterance();
+      }
+    });
+  </script>
+</body>
+</html>
