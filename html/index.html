@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Echorus Control Panel</title>
+  <link rel="stylesheet" href="../static/styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><span></span><span></span><span></span></div>
+      <div>
+        <p>Realtime System</p>
+        <h1>Echorus Panel</h1>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <div>
+        <span id="statusDot" class="dot"></span>
+        <strong id="statusText">Mock mode</strong>
+      </div>
+      <small id="lastSync">No backend sync yet</small>
+    </div>
+
+    <nav id="nav"></nav>
+
+    <div class="sidebar-actions">
+      <button id="refreshBtn" class="secondary">Refresh from backend</button>
+      <button id="resetBtn" class="secondary">Reset UI</button>
+      <button id="stopBtn" class="danger">Stop App</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div>
+        <p class="kicker">Audio × Visual Controls</p>
+        <h2>Live config editor for speech, composer, playback, and visual generators.</h2>
+      </div>
+
+      <section class="endpoint">
+        <label>
+          API base
+          <input id="endpoint" value="http://127.0.0.1:8000" />
+        </label>
+
+        <div class="endpoint-row">
+          <label class="toggle">
+            <input id="mockMode" type="checkbox" checked />
+            <span>Mock mode</span>
+          </label>
+
+          <label class="toggle">
+            <input id="autoSend" type="checkbox" checked />
+            <span>Auto-send</span>
+          </label>
+        </div>
+
+        <div class="endpoint-row">
+          <label>
+            Preset name
+            <input id="presetName" placeholder="new-preset" />
+          </label>
+        </div>
+
+        <div class="endpoint-actions">
+          <button id="savePresetBtn" class="primary">Save preset</button>
+          <button id="saveCurrentPresetBtn" class="secondary">Save current preset</button>
+        </div>
+      </section>
+    </header>
+
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Search speech, composer, dustscene, waver..." />
+      <div id="presets" class="preset-list"></div>
+      <div class="toolbar-actions">
+        <button id="pullConfigBtn" class="secondary">Pull config</button>
+        <button id="sendAllBtn" class="primary">Send all values</button>
+      </div>
+    </section>
+
+    <section class="readouts">
+      <div><span>BPM</span><strong id="bpmReadout">120</strong></div>
+      <div><span>Generator</span><strong id="generatorReadout">dust</strong></div>
+      <div><span>Visual Budget</span><strong id="budgetReadout">250k</strong></div>
+      <div><span>Background Video</span><strong id="videoReadout">off</strong></div>
+    </section>
+
+    <section class="layout">
+      <div id="controls" class="controls"></div>
+
+      <aside class="inspector">
+        <div class="inspector-head">
+          <div>
+            <p class="kicker">Payload</p>
+            <h3>Last request</h3>
+          </div>
+          <button id="copyBtn" class="secondary small">Copy</button>
+        </div>
+
+        <pre id="payload">No requests yet.</pre>
+
+        <div class="inspector-block">
+          <h3>Backend routes</h3>
+          <pre>GET  /status
+GET  /config
+GET  /presets
+POST /config/set
+POST /config/update
+POST /preset/save
+POST /preset/load
+POST /preset/save-current
+POST /stop</pre>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+
+  <script src="../static/app.js"></script>
+</body>
+</html>

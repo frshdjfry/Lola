@@ -197,6 +197,11 @@ nav a.active {
   background: rgba(255,255,255,0.07);
 }
 
+.sidebar-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
@@ -208,13 +213,28 @@ nav a.active {
 .hero h2 {
   max-width: 900px;
   margin: 0;
-  font-size: clamp(2rem, 4vw, 4.6rem);
+  font-size: clamp(2rem, 4vw, 4.2rem);
   line-height: 0.96;
   letter-spacing: -0.07em;
 }
 
 .endpoint {
   padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.endpoint-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.endpoint-actions,
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 label {
@@ -245,7 +265,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .toggle input {
@@ -254,15 +274,16 @@ select:focus {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1fr) auto;
   gap: 12px;
   margin-bottom: 16px;
 }
 
-#presets {
+.preset-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: start;
 }
 
 .primary,
@@ -281,13 +302,20 @@ select:focus {
 
 .danger {
   width: 100%;
-  margin-top: 10px;
   background: rgba(255, 102, 120, 0.14);
   border-color: rgba(255, 102, 120, 0.32);
 }
 
 .secondary {
   width: 100%;
+}
+
+.toolbar .secondary,
+.toolbar .primary,
+.endpoint .secondary,
+.endpoint .primary,
+.preset-list .secondary {
+  width: auto;
 }
 
 .small {
@@ -356,7 +384,8 @@ select:focus {
   padding: 16px;
 }
 
-.control.hidden {
+.control.hidden,
+.group.hidden {
   display: none;
 }
 
@@ -393,6 +422,11 @@ select:focus {
   align-items: center;
 }
 
+.input-stack {
+  display: grid;
+  gap: 10px;
+}
+
 input[type="range"] {
   padding: 0;
   accent-color: var(--cyan);
@@ -412,6 +446,10 @@ input[type="range"] {
 
 .inspector h3 {
   margin: 0 0 10px;
+}
+
+.inspector-block + .inspector-block {
+  margin-top: 18px;
 }
 
 pre {
@@ -456,7 +494,8 @@ pre {
   }
 
   .hero,
-  .layout {
+  .layout,
+  .toolbar {
     grid-template-columns: 1fr;
   }
 
@@ -471,7 +510,7 @@ pre {
     padding: 18px;
   }
 
-  .toolbar,
+  .endpoint-row,
   .group-grid,
   .readouts {
     grid-template-columns: 1fr;

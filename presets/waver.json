@@ -1,0 +1,9 @@
+{
+  "visual": {
+    "active_generator": "waver",
+    "video_path": "videos/background-2.mp4"
+  },
+  "dustscene": {
+    "camera_dolly_speed": 1.87
+  }
+}
