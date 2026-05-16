@@ -50,11 +50,12 @@ DEFAULTS: Dict[str, Any] = {
         "visual_x_range": [-6.0, 6.0],
         "visual_y_range": [-1.0, 1.0],
         "visual_z_range": [-1.5, 1.5],
-        "event_duration_scale": 0.9,
         "event_min_duration": 0.05,
         "default_word_duration": 0.2,
         "replacements_per_bar": 2,
         "tonic_midi": 57,
+        "note_length_choices": [1.0, 0.5, 0.25],
+        "note_length_random": True,
     }
 }
 
@@ -232,6 +233,43 @@ class Composer:
             )
 
         return slices
+
+    def parse_note_length_choices(self) -> List[float]:
+        raw = self._cfg().get("note_length_choices", [1.0, 0.5, 0.25])
+
+        if isinstance(raw, str):
+            values = []
+            for part in raw.split(","):
+                try:
+                    values.append(float(part.strip()))
+                except ValueError:
+                    continue
+        else:
+            values = []
+            for item in raw:
+                try:
+                    values.append(float(item))
+                except (TypeError, ValueError):
+                    continue
+
+        values = [v for v in values if 0.0 < v <= 1.0]
+        if not values:
+            values = [1.0]
+
+        values = sorted(set(values), reverse=True)
+        return values
+
+    def choose_note_duration(self, slot_duration: float) -> float:
+        cfg = self._cfg()
+        choices = self.parse_note_length_choices()
+        min_duration = float(cfg["event_min_duration"])
+
+        if bool(cfg.get("note_length_random", True)):
+            ratio = random.choice(choices)
+        else:
+            ratio = choices[0]
+
+        return max(min_duration, slot_duration * ratio)
 
     def word_duration(self, word: Word, default: float) -> float:
         candidates = [
@@ -524,10 +562,7 @@ class Composer:
                     )
 
                     offset_sec = (bar_idx * master_steps + step_idx) * base_step_duration
-                    event_duration = max(
-                        float(cfg["event_min_duration"]),
-                        base_step_duration * float(cfg["event_duration_scale"]),
-                    )
+                    event_duration = self.choose_note_duration(base_step_duration)
 
                     midi_note = int(ws.midi_note if ws.midi_note is not None else 60)
                     velocity = int(np.clip(round(127 * gain), 1, 127))

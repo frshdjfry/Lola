@@ -24,10 +24,11 @@ const paramGroups = [
       { path: "composer.step_size_choices", label: "Step size choices", type: "text", value: "2, 4, 6" },
       { path: "composer.decay_per_hit", label: "Decay per hit", type: "range", min: 0.05, max: 1, step: 0.01, value: 0.5 },
       { path: "composer.min_gain", label: "Minimum gain", type: "range", min: 0.01, max: 0.5, step: 0.01, value: 0.05 },
-      { path: "composer.event_duration_scale", label: "Event duration scale", type: "range", min: 0.1, max: 3, step: 0.05, value: 0.9 },
       { path: "composer.event_min_duration", label: "Minimum event duration", type: "range", min: 0.01, max: 0.5, step: 0.01, value: 0.05, suffix: "s" },
       { path: "composer.default_word_duration", label: "Default word duration", type: "range", min: 0.03, max: 1.2, step: 0.01, value: 0.2, suffix: "s" },
-      { path: "composer.replacements_per_bar", label: "Replacements per bar", type: "range", min: 1, max: 8, step: 1, value: 2 }
+      { path: "composer.replacements_per_bar", label: "Replacements per bar", type: "range", min: 1, max: 8, step: 1, value: 2 },
+      { path: "composer.note_length_choices", label: "Note length choices", type: "text", value: "1, 0.5, 0.25", help: "Fractions of the current rhythmic slot. Example: whole, half, quarter." },
+      { path: "composer.note_length_random", label: "Randomize note length", type: "boolean", value: true, help: "Randomly choose from the allowed fractions." },
     ]
   },
   {
