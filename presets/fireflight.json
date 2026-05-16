@@ -4,6 +4,15 @@
     "video_path": "videos/background-1.mp4"
   },
   "dustscene": {
-    "camera_dolly_speed": 1.87
+    "camera_dolly_speed": 0.87
+  },
+  "composer": {
+    "max_voices": 4,
+    "bpm": 90,
+    "step_size_choices": [
+      2,
+      4,
+      6
+    ]
   }
 }
