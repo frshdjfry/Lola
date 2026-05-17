@@ -71,10 +71,18 @@ class ConfigStore:
         if not isinstance(loaded, dict):
             raise ValueError("Config JSON root must be an object")
 
+        preset_name = None
+        if self._presets_dir is not None:
+            try:
+                path.relative_to(self._presets_dir)
+                preset_name = path.stem
+            except ValueError:
+                preset_name = None
+
         with self._lock:
             self._config_path = path
             self._config = _deep_merge(self._defaults, loaded)
-            self._current_preset_name = None
+            self._current_preset_name = preset_name
             return deepcopy(self._config)
 
     def reset_to_defaults(self) -> Dict[str, Any]:

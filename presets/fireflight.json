@@ -1,6 +1,6 @@
 {
   "visual": {
-    "active_generator": "dust",
+    "active_generator": "fireflight",
     "video_path": "videos/background-1.mp4",
     "subtitles_enabled": true,
     "subtitle_preview_enabled": false,
@@ -23,12 +23,12 @@
     "subtitle_idle_timeout": 40.0,
     "subtitle_font_name": "Centaur Now"
   },
-  "dustscene": {
+  "fireflight": {
     "camera_dolly_speed": 0.87
   },
   "composer": {
     "max_voices": 4,
-    "bpm": 90,
+    "bpm": 75,
     "step_size_choices": [
       2,
       4,

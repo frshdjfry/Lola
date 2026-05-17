@@ -19,7 +19,7 @@ ffmpeg_decoder = FFmpegDecoder()
 DEFAULTS: Dict[str, Any] = {
     "visual": {
         "queue_size": 256,
-        "active_generator": "dust",
+        "active_generator": "fireflight",
         "switch_fade_sec": 0.35,
         "window_width": 1280,
         "window_height": 720,
@@ -165,7 +165,7 @@ class VisualWindow(pyglet.window.Window):
         self.video_texture = tex
 
     def _desired_generator_name(self) -> str:
-        return str(self.config_store.get("visual.active_generator", "dust")).lower()
+        return str(self.config_store.get("visual.active_generator", "fireflight")).lower()
 
     def _fade_duration(self) -> float:
         return max(0.01, float(self.config_store.get("visual.switch_fade_sec", 0.35)))
@@ -330,8 +330,8 @@ class VisualWindow(pyglet.window.Window):
                 self.subtitle_overlay.handle_transcript(event)
 
     def _active_generator_config_section(self) -> str:
-        if self.generator_name == "dust":
-            return "dustscene"
+        if self.generator_name == "fireflight":
+            return "fireflight"
         if self.generator_name == "waver":
             return "waver"
         return ""

@@ -81,7 +81,7 @@ void main() {
 
 
 DEFAULTS = {
-    "dustscene": {
+    "fireflight": {
         "width": 1280,
         "height": 720,
         "camera_distance": -17.0,
@@ -154,7 +154,7 @@ def cubic_bezier_tangent(p0, p1, p2, p3, t):
     return (d / n).astype("f4")
 
 
-class DustScene:
+class Fireflight:
     def __init__(self, config: ConfigStore | None = None):
         self.config_store = config
         self.window = None
@@ -210,9 +210,9 @@ class DustScene:
         self.head_vao = None
 
     def _cfg(self) -> Dict[str, Any]:
-        merged = dict(DEFAULTS["dustscene"])
+        merged = dict(DEFAULTS["fireflight"])
         if self.config_store is not None:
-            current = self.config_store.get("dustscene", {}) or {}
+            current = self.config_store.get("fireflight", {}) or {}
             merged.update(current)
         return merged
 

@@ -12,7 +12,7 @@ import pyglet
 from comms import Comms, TOPIC_UTTERANCE, TOPIC_STATE_UPDATE, TOPIC_TRANSCRIPT
 from composer import Composer
 from config import ConfigStore
-from dustscene import DustScene
+from fireflight import Fireflight
 from http_server import HttpServer
 from models import Utterance, TranscriptEvent
 from playback import PlaybackEngine
@@ -104,8 +104,8 @@ class App:
     def build_visual_generator(self, name: str):
         name = str(name).lower()
 
-        if name == "dust":
-            return DustScene(self.config)
+        if name == "fireflight":
+            return Fireflight(self.config)
 
         if name == "waver":
             return Waver(self.config)

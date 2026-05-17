@@ -206,6 +206,7 @@ class HttpServer:
                         self._ok({"saved_to": str(saved_path), "preset": name})
                         return
 
+
                     if path == "/preset/load":
                         data = self._read_json()
                         name = data.get("name")
@@ -213,8 +214,13 @@ class HttpServer:
                             self._send_json(400, {"error": "Body must include non-empty preset name"})
                             return
 
-                        config = server.config_store.load_preset(name)
-                        self._ok({"preset": name, "config": config})
+                        server.config_store.load_preset(name)
+
+                        self._ok({
+                            "preset": name,
+                            "config": server.config_store.snapshot(),
+                            "info": server.config_store.info(),
+                        })
                         return
 
                     if path == "/preset/save-current":

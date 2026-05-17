@@ -3,7 +3,10 @@
     "active_generator": "waver",
     "video_path": "videos/background-2.mp4"
   },
-  "dustscene": {
+  "fireflight": {
     "camera_dolly_speed": 1.87
+  },
+  "composer": {
+    "bpm": 45
   }
 }

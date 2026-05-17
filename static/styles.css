@@ -285,6 +285,11 @@ select:focus {
   gap: 8px;
   align-items: start;
 }
+.preset-list button.active {
+  background: linear-gradient(135deg, rgba(111,243,255,0.28), rgba(181,140,255,0.24));
+  border-color: rgba(111, 243, 255, 0.35);
+  color: var(--text);
+}
 
 .primary,
 .secondary,
@@ -325,7 +330,7 @@ select:focus {
 
 .readouts {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 18px;
 }
