@@ -136,3 +136,11 @@ class NoteEvent:
             "channel": self.channel,
             "meta": dict(self.meta),
         }
+
+
+@dataclass
+class TranscriptEvent:
+    text: str
+    kind: str = "final"   # "partial", "final", "partial_clear"
+    utterance_id: Optional[str] = None
+    words: List[Word] = field(default_factory=list)

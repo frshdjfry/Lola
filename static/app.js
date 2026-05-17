@@ -65,6 +65,34 @@ const paramGroups = [
       { path: "visual.video_muted", label: "Background video muted", type: "boolean", value: true }
     ]
   },
+    {
+      id: "subtitles",
+      title: "Subtitles",
+      note: "Transcript overlay, wrapping, stacking, and visual depth.",
+      controls: [
+        { path: "visual.subtitles_enabled", label: "Subtitles enabled", type: "boolean", value: true },
+        { path: "visual.subtitle_preview_enabled", label: "Live preview enabled", type: "boolean", value: true },
+        { path: "visual.subtitle_max_rows", label: "Max visible rows", type: "range", min: 1, max: 16, step: 1, value: 6 },
+        { path: "visual.subtitle_max_chars_per_line", label: "Max chars per line", type: "range", min: 12, max: 100, step: 1, value: 42 },
+        { path: "visual.subtitle_top_margin", label: "Top margin", type: "range", min: 20, max: 300, step: 1, value: 80 },
+        { path: "visual.subtitle_base_font_size", label: "Base font size", type: "range", min: 12, max: 64, step: 1, value: 28 },
+        { path: "visual.subtitle_depth_scale", label: "Depth scale", type: "range", min: 0.5, max: 1, step: 0.01, value: 0.88 },
+        { path: "visual.subtitle_depth_alpha", label: "Depth alpha", type: "range", min: 0.2, max: 1, step: 0.01, value: 0.78 },
+        { path: "visual.subtitle_attack", label: "Highlight attack", type: "range", min: 1, max: 20, step: 0.1, value: 10.0 },
+        { path: "visual.subtitle_release", label: "Highlight release", type: "range", min: 1, max: 20, step: 0.1, value: 6.0 },
+        { path: "visual.subtitle_stopword_only_timeout", label: "Stopword-only timeout", type: "range", min: 0.2, max: 10, step: 0.1, value: 2.0 },
+        { path: "visual.subtitle_move_speed", label: "Move speed", type: "range", min: 1, max: 30, step: 0.1, value: 10.0 },
+        { path: "visual.subtitle_fade_speed", label: "Fade speed", type: "range", min: 1, max: 30, step: 0.1, value: 8.0 },
+        { path: "visual.subtitle_font_name", label: "Font name", type: "text", value: "Arial" },
+        { path: "visual.subtitle_shadow_enabled", label: "Shadow enabled", type: "boolean", value: true },
+        { path: "visual.subtitle_shadow_dx", label: "Shadow X", type: "range", min: -8, max: 8, step: 1, value: 2 },
+        { path: "visual.subtitle_shadow_dy", label: "Shadow Y", type: "range", min: -8, max: 8, step: 1, value: -2 },
+        { path: "visual.subtitle_shadow_alpha", label: "Shadow alpha", type: "range", min: 0, max: 1, step: 0.01, value: 0.35 },
+        { path: "visual.subtitle_glow_enabled", label: "Glow enabled", type: "boolean", value: true },
+        { path: "visual.subtitle_glow_alpha", label: "Glow alpha", type: "range", min: 0, max: 1, step: 0.01, value: 0.18 },
+        { path: "visual.subtitle_glow_size", label: "Glow size", type: "range", min: 0, max: 6, step: 1, value: 2 },
+      ]
+    },
   {
     id: "dustscene",
     title: "DustScene",

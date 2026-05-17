@@ -7,10 +7,13 @@ import moderngl
 import pyglet
 from pyglet import gl, shapes
 
-from comms import TOPIC_STATE_UPDATE, TOPIC_VISUAL_EVENT
+from comms import TOPIC_STATE_UPDATE, TOPIC_VISUAL_EVENT, TOPIC_TRANSCRIPT
 from config import ConfigStore
-from models import StateUpdate, VisualEvent
+from models import StateUpdate, VisualEvent, TranscriptEvent
 from pyglet.media.codecs.ffmpeg import FFmpegDecoder
+
+from subtitle_overlay import SubtitleOverlay
+
 ffmpeg_decoder = FFmpegDecoder()
 
 DEFAULTS: Dict[str, Any] = {
@@ -30,15 +33,17 @@ DEFAULTS: Dict[str, Any] = {
 
 class VisualWindow(pyglet.window.Window):
     def __init__(
-        self,
-        config: ConfigStore,
-        visual_queue: queue.Queue,
-        state_queue: queue.Queue,
-        generator_factory: Callable[[str], Any],
+            self,
+            config: ConfigStore,
+            visual_queue: queue.Queue,
+            state_queue: queue.Queue,
+            transcript_queue: queue.Queue,
+            generator_factory: Callable[[str], Any],
     ):
         self.config_store = config
         self.visual_queue = visual_queue
         self.state_queue = state_queue
+        self.transcript_queue = transcript_queue
         self.generator_factory = generator_factory
 
         cfg = self._cfg()
@@ -110,8 +115,9 @@ class VisualWindow(pyglet.window.Window):
         self._video_enabled_applied = enabled
         self._video_path_applied = path
         self._video_muted_applied = muted
+        self.subtitle_overlay = SubtitleOverlay(self.config_store, self)
 
-        pyglet.clock.schedule_interval(self.update, 1.0 / 120.0)
+        pyglet.clock.schedule_interval(self.update, 1.0 / 60.0)
 
     def _cfg(self) -> Dict[str, Any]:
         merged = dict(DEFAULTS["visual"])
@@ -308,8 +314,20 @@ class VisualWindow(pyglet.window.Window):
             if not isinstance(event, VisualEvent):
                 continue
 
+            self.subtitle_overlay.handle_visual_event(event)
+
             if self.generator is not None and hasattr(self.generator, "handle_event"):
                 self.generator.handle_event(event)
+
+    def _drain_transcript_updates(self) -> None:
+        while True:
+            try:
+                event = self.transcript_queue.get_nowait()
+            except queue.Empty:
+                break
+
+            if isinstance(event, TranscriptEvent):
+                self.subtitle_overlay.handle_transcript(event)
 
     def _active_generator_config_section(self) -> str:
         if self.generator_name == "dust":
@@ -320,6 +338,7 @@ class VisualWindow(pyglet.window.Window):
 
     def update(self, dt: float) -> None:
         self._drain_state_updates()
+        self._drain_transcript_updates()
 
         desired_name = self._desired_generator_name()
         video_enabled, video_path, video_muted = self._desired_video_state()
@@ -352,6 +371,8 @@ class VisualWindow(pyglet.window.Window):
             cfg = self.config_store.get(section, {}) or {}
             self.generator.apply_config(cfg)
 
+        self.subtitle_overlay.update(dt)
+
     def on_draw(self) -> None:
         self.ctx.viewport = (0, 0, self.width, self.height)
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)
@@ -366,6 +387,8 @@ class VisualWindow(pyglet.window.Window):
 
         if self.generator is not None and hasattr(self.generator, "draw"):
             self.generator.draw()
+
+        self.subtitle_overlay.draw()
 
         if self.blackout > 0.0:
             self.fade_overlay.draw()
@@ -414,6 +437,7 @@ class VisualEngine:
 
         self.visual_queue: Optional[queue.Queue] = None
         self.state_queue: Optional[queue.Queue] = None
+        self.transcript_queue: Optional[queue.Queue] = None
         self.window: Optional[VisualWindow] = None
 
     @property
@@ -437,6 +461,7 @@ class VisualEngine:
 
         self.visual_queue = self.comms.open_queue(TOPIC_VISUAL_EVENT, maxsize=queue_size)
         self.state_queue = self.comms.open_queue(TOPIC_STATE_UPDATE, maxsize=queue_size)
+        self.transcript_queue = self.comms.open_queue(TOPIC_TRANSCRIPT, maxsize=queue_size)
 
         def create_window(dt=0.0):
             if self.window is None:
@@ -444,6 +469,7 @@ class VisualEngine:
                     self.config,
                     self.visual_queue,
                     self.state_queue,
+                    self.transcript_queue,
                     self.generator_factory,
                 )
 
@@ -464,5 +490,9 @@ class VisualEngine:
             if self.state_queue is not None:
                 self.comms.close_queue(TOPIC_STATE_UPDATE, self.state_queue)
                 self.state_queue = None
+
+            if self.transcript_queue is not None:
+                self.comms.close_queue(TOPIC_TRANSCRIPT, self.transcript_queue)
+                self.transcript_queue = None
 
         pyglet.clock.schedule_once(close_window, 0.0)

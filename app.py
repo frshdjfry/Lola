@@ -9,12 +9,12 @@ from typing import Any, Dict, Optional
 
 import pyglet
 
-from comms import Comms, TOPIC_UTTERANCE, TOPIC_STATE_UPDATE
+from comms import Comms, TOPIC_UTTERANCE, TOPIC_STATE_UPDATE, TOPIC_TRANSCRIPT
 from composer import Composer
 from config import ConfigStore
 from dustscene import DustScene
 from http_server import HttpServer
-from models import Utterance
+from models import Utterance, TranscriptEvent
 from playback import PlaybackEngine
 from speech import SpeechDetector
 from visual import VisualEngine
@@ -71,24 +71,35 @@ class App:
 
     def submit_text_utterance(self, text: str) -> None:
         text = text.strip()
-        if not text:
-            return
+        lines = text.split('\n')
+        for text in lines:
+            if not text:
+                continue
 
-        raw_words = [{"word": token} for token in text.split()]
-        words = self.speech.enrich_words(raw_words)
-        if not words:
-            return
+            raw_words = [{"word": token} for token in text.split()]
+            words = self.speech.enrich_words(raw_words)
+            if not words:
+                continue
 
-        utterance = Utterance(
-            text=text,
-            words=words,
-            audio=None,
-        )
-        self.comms.send(TOPIC_UTTERANCE, utterance)
+            utterance = Utterance(
+                text=text,
+                words=words,
+                audio=None,
+            )
+            self.comms.send(TOPIC_UTTERANCE, utterance)
+            self.comms.send(
+                TOPIC_TRANSCRIPT,
+                TranscriptEvent(
+                    text=text,
+                    kind="final",
+                    utterance_id=utterance.utterance_id,
+                    words=words,
+                ),
+            )
 
-        state_update = self.speech.update_state(words)
-        if state_update is not None:
-            self.comms.send(TOPIC_STATE_UPDATE, state_update)
+            state_update = self.speech.update_state(words)
+            if state_update is not None:
+                self.comms.send(TOPIC_STATE_UPDATE, state_update)
 
     def build_visual_generator(self, name: str):
         name = str(name).lower()

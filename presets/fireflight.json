@@ -1,7 +1,27 @@
 {
   "visual": {
     "active_generator": "dust",
-    "video_path": "videos/background-1.mp4"
+    "video_path": "videos/background-1.mp4",
+    "subtitles_enabled": true,
+    "subtitle_preview_enabled": false,
+    "subtitle_max_blocks": 5,
+    "subtitle_max_chars_per_line": 80,
+    "subtitle_top_margin": 1180,
+    "subtitle_left_right_margin": 48,
+    "subtitle_line_gap": 8,
+    "subtitle_block_gap": 16,
+    "subtitle_base_font_size": 56,
+    "subtitle_depth_scale": 0.58,
+    "subtitle_depth_alpha": 0.58,
+    "subtitle_neutral_color": [
+      198,
+      214,
+      230
+    ],
+    "subtitle_attack": 10.0,
+    "subtitle_release": 6.0,
+    "subtitle_idle_timeout": 40.0,
+    "subtitle_font_name": "Centaur Now"
   },
   "dustscene": {
     "camera_dolly_speed": 0.87

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import colorsys
 import math
 import queue
 import random
@@ -37,6 +38,16 @@ MODE_INTERVALS = {
 }
 
 MODE_NAMES = list(MODE_INTERVALS.keys())
+
+VALENCE_COLOR_STOPS = [
+    (0.00, (0.17, 0.25, 0.58)),  # indigo blue
+    (0.18, (0.27, 0.38, 0.70)),  # blue
+    (0.36, (0.45, 0.46, 0.72)),  # violet-blue
+    (0.50, (0.63, 0.59, 0.74)),  # muted lilac midpoint
+    (0.68, (0.82, 0.63, 0.49)),  # sand amber
+    (0.84, (0.91, 0.53, 0.31)),  # orange
+    (1.00, (0.95, 0.39, 0.34)),  # coral
+]
 
 DEFAULTS: Dict[str, Any] = {
     "composer": {
@@ -132,12 +143,7 @@ class Composer:
 
                 if not isinstance(utterance, Utterance):
                     continue
-
-                threading.Thread(
-                    target=self.compose_and_emit,
-                    args=(utterance,),
-                    daemon=True,
-                ).start()
+                self.compose_and_emit(utterance)
         finally:
             self.close()
             print("[COMPOSER] Stopped.")
@@ -497,6 +503,50 @@ class Composer:
             random.uniform(0.1, 1.0),
         ]
 
+    def lerp(self, a: float, b: float, t: float) -> float:
+        t = float(np.clip(t, 0.0, 1.0))
+        return a + (b - a) * t
+
+    def lerp_rgb(self, a: List[float], b: List[float], t: float) -> List[float]:
+        return [
+            self.lerp(a[0], b[0], t),
+            self.lerp(a[1], b[1], t),
+            self.lerp(a[2], b[2], t),
+        ]
+
+    def base_color_from_valence(self, valence: float) -> List[float]:
+        v = float(np.clip(valence, 0.0, 1.0))
+
+        for i in range(len(VALENCE_COLOR_STOPS) - 1):
+            v0, c0 = VALENCE_COLOR_STOPS[i]
+            v1, c1 = VALENCE_COLOR_STOPS[i + 1]
+            if v <= v1:
+                t = 0.0 if v1 == v0 else (v - v0) / (v1 - v0)
+                return self.lerp_rgb(list(c0), list(c1), t)
+
+        return list(VALENCE_COLOR_STOPS[-1][1])
+
+    def color_from_word_features(self, word: Word) -> List[float]:
+        valence = self.get_word_feature_pct(word, "valence", default=0.5)
+        arousal = self.get_word_feature_pct(word, "arousal", default=0.5)
+        dominance = self.get_word_feature_pct(word, "dominance", default=0.5)
+
+        base = self.base_color_from_valence(valence)
+
+        h, l, s = colorsys.rgb_to_hls(base[0], base[1], base[2])
+
+        # Higher valence -> a bit lighter
+        # Higher arousal -> more saturated, slightly darker
+        # Dominance supports saturation/chroma a little
+        sat_boost = 0.10 + 0.55 * arousal + 0.20 * dominance
+        light_shift = 0.10 * (valence - 0.5) - 0.12 * (arousal - 0.5) + 0.04 * (dominance - 0.5)
+
+        s = float(np.clip(0.35 + 0.55 * sat_boost, 0.28, 0.95))
+        l = float(np.clip(l + light_shift, 0.26, 0.78))
+
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        return [float(r), float(g), float(b)]
+
     def build_schedule(self, word_slices: List[WordSlice], utterance: Utterance) -> List[Dict[str, Any]]:
         cfg = self._cfg()
         rhythm_engine = Rhythms()
@@ -542,11 +592,17 @@ class Composer:
                     debruijn_order=debruijn_order,
                 )
 
-                visual_key = (bar_idx, ws.word.text)
+
+                word_index = int(ws.word.meta.get("word_index", -1))
+                visual_key = (bar_idx, word_index if word_index >= 0 else ws.word.text)
+
+                local_valence = self.get_word_feature_pct(ws.word, "valence", default=0.5)
+                word_color = self.color_from_word_features(ws.word)
+
                 if visual_key not in bar_word_visuals:
                     bar_word_visuals[visual_key] = {
                         "position": self.random_position(),
-                        "color": self.random_color(),
+                        "color": word_color,
                     }
 
                 visual = bar_word_visuals[visual_key]
@@ -575,11 +631,12 @@ class Composer:
                         color=list(visual["color"]),
                         meta={
                             "utterance_id": utterance.utterance_id,
+                            "word_index": word_index,
                             "bar": bar_idx,
                             "voice": voice_idx,
                             "step": step_idx,
                             "rhythm_type": rhythm_type,
-                        },
+                        }
                     )
 
                     note_event = NoteEvent(
@@ -608,4 +665,8 @@ class Composer:
                     hit_count_in_bar += 1
 
         schedule.sort(key=lambda item: item["offset_sec"])
+
+        if schedule:
+            schedule[-1]["visual_event"].meta["is_last_in_utterance"] = True
+
         return schedule

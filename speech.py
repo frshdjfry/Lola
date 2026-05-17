@@ -14,9 +14,9 @@ import numpy as np
 import sounddevice as sd
 from vosk import KaldiRecognizer, Model
 
-from comms import Comms, TOPIC_UTTERANCE, TOPIC_STATE_UPDATE
+from comms import Comms, TOPIC_UTTERANCE, TOPIC_STATE_UPDATE, TOPIC_TRANSCRIPT
 from config import ConfigStore
-from models import StateUpdate, Utterance, Word
+from models import StateUpdate, Utterance, Word, TranscriptEvent
 
 from nltk.corpus import stopwords as nltk_stopwords
 
@@ -213,16 +213,26 @@ class SpeechDetector:
                 partial_result = json.loads(recognizer.PartialResult())
                 partial = partial_result.get("partial", "").strip()
 
+
                 if partial and len(partial) >= self.min_partial_chars:
                     if not utterance_started:
                         utterance_started = True
-                        print(f"\n[UTTERANCE START] {partial}")
+                        print(f"\\n[UTTERANCE START] {partial}")
                     elif partial != last_partial:
-                        print(f"\r[LISTENING] {partial}", end="", flush=True)
+                        print(f"\\r[LISTENING] {partial}", end="", flush=True)
+
+                    if partial != last_partial:
+                        self.comms.send(
+                            TOPIC_TRANSCRIPT,
+                            TranscriptEvent(
+                                text=partial,
+                                kind="partial",
+                            ),
+                        )
 
                     last_speech_time = now
 
-                last_partial = partial
+
 
             if utterance_started and last_speech_time is not None:
                 if now - last_speech_time >= self.short_pause_sec:
@@ -235,6 +245,13 @@ class SpeechDetector:
 
                     if text and words:
                         print(f"\n[UTTERANCE END] {text}")
+                        self.comms.send(
+                            TOPIC_TRANSCRIPT,
+                            TranscriptEvent(
+                                text="",
+                                kind="partial_clear",
+                            ),
+                        )
                         return audio, words
 
                     recognizer = self.new_recognizer()
@@ -263,17 +280,24 @@ class SpeechDetector:
     def enrich_words(self, raw_words: list) -> List[Word]:
         words: List[Word] = []
 
-        for item in raw_words:
+        for index, item in enumerate(raw_words):
             text = (item.get("word") or "").strip()
             if not text:
                 continue
 
             features = self.get_word_norms(text) or {}
+            meta = {
+                "word_index": index,
+                "is_stopword": text.lower() in STOP_WORDS,
+                "start_sec": item.get("start"),
+                "end_sec": item.get("end"),
+            }
 
             words.append(
                 Word(
                     text=text,
                     features=dict(features),
+                    meta=meta,
                 )
             )
 
@@ -369,6 +393,15 @@ class SpeechDetector:
                         audio=utterance_audio,
                     )
                     self.comms.send(TOPIC_UTTERANCE, utterance)
+                    self.comms.send(
+                        TOPIC_TRANSCRIPT,
+                        TranscriptEvent(
+                            text=utterance_text,
+                            kind="final",
+                            utterance_id=utterance.utterance_id,
+                            words=words,
+                        ),
+                    )
 
                     state_update = self.update_state(words)
                     if state_update is not None:
